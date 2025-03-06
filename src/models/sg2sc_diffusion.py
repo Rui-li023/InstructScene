@@ -10,7 +10,6 @@ from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
 from diffusers.schedulers.scheduling_ddim import DDIMScheduler
 
 from .networks import *
-
 from src.utils.logger import StatsLogger
 
 
@@ -52,7 +51,7 @@ class Sg2ScDiffusion(nn.Module):
             edge_dim=num_preds+1,  # +1 for empty edge
             t_dim=128, attn_dim=512,
             global_condition_dim=None,
-            context_dim=None,  # not use text condition in Sg2Sc
+            context_dim=128,
             n_heads=8, n_layers=5,
             gated_ff=True, dropout=0.1, ada_norm=True,
             cfg_drop_ratio=cfg_drop_ratio,
@@ -70,14 +69,14 @@ class Sg2ScDiffusion(nn.Module):
         x = sample_params["objs"]          # (B, N)
         e = sample_params["edges"]         # (B, N, N)
         o = sample_params["objfeat_vq_indices"]  # (B, N, K)
+        room_masks = sample_params["room_masks"]  # (B, 256, 256)
         mask = sample_params["obj_masks"]  # (B, N)
-        boxes = sample_params["boxes"]     # (B, N, 8)
-
+        boxes = sample_params["boxes"]     # (B, N, 8) x, y ,z ,dx, dy, dz, cos, sin
         noise = torch.randn_like(boxes)
 
         B, device = x.shape[0], x.device
         timesteps = torch.randint(1, self.scheduler.config.num_train_timesteps, (B,)).to(device)
-
+        room_masks = room_masks.unsqueeze(-1)
         # Mask out the padding boxes
         box_mask = mask.unsqueeze(-1)  # (B, N, 1)
         noise = noise * box_mask
@@ -98,7 +97,7 @@ class Sg2ScDiffusion(nn.Module):
 
         pred = self.network(
             noisy_boxes, x, e, o,  # `x`, `e` and `o` as conditions
-            timesteps, mask=mask
+            timesteps, mask=mask, condition=room_masks
         ) * box_mask
 
         losses = {}
@@ -217,7 +216,11 @@ class Sg2ScTransformerDiffusionWrapper(nn.Module):
         n_heads=8, n_layers=5,
         gated_ff=True, dropout=0.1, ada_norm=True,
         cfg_drop_ratio=0.2,
-        use_objfeat=True
+        use_objfeat=True,
+        name="resnet18",
+        freeze_bn=True,
+        input_channels=1,
+        feature_size=128
     ):
         super().__init__()
 
@@ -265,6 +268,17 @@ class Sg2ScTransformerDiffusionWrapper(nn.Module):
             nn.Linear(attn_dim, 8)
         )
 
+        self.feature_extractor = get_feature_extractor( 
+            name,
+            freeze_bn=freeze_bn,
+            input_channels=input_channels,
+            feature_size=feature_size,
+        )
+        
+        self.fc_room_f = nn.Linear(
+            self.feature_extractor.feature_size, context_dim
+        )
+        
         self.node_dim = node_dim
         self.edge_dim = edge_dim
         self.use_global_info = global_dim is not None
@@ -321,6 +335,11 @@ class Sg2ScTransformerDiffusionWrapper(nn.Module):
             empty_prob = torch.rand(e_emb.shape[0], device=e_emb.device) < self.cfg_drop_ratio
             e_emb[empty_prob, ...] = empty_e_emb
 
+        if condition is not None:
+            condition = condition.permute(0, 3, 2, 1)
+            condition = self.feature_extractor(condition)
+            # condition = self.fc_room_f(condition)
+            
         # Prepare for classifier-free guidance in inference
         if not self.training and cfg_scale != 1.:
             empty_e_emb = torch.zeros_like(e_emb)
@@ -342,6 +361,8 @@ class Sg2ScTransformerDiffusionWrapper(nn.Module):
         if mask is not None:
             out_box = out_box * mask.unsqueeze(-1)
 
+
+            
         # Do classifier-free guidance in inference
         if not self.training and cfg_scale != 1.:
             out_box_uncond, out_box_cond = out_box.chunk(2, dim=0)

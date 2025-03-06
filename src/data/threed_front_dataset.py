@@ -48,7 +48,7 @@ class SG2SC(DatasetDecoratorBase):
             "objs": [],        # Tensor; (bs, n)
             "edges": [],       # Tensor; (bs, n, n)
             "obj_masks": [],   # LongTensor; (bs, n)
-            # "room_masks": [],  # Tensor; (bs, 1, 64, 64)
+            "room_masks": [],  # Tensor; (bs, 1, 256, 256)
             "objfeat_vq_indices": []  # LongTensor; (bs, n, k)
         }
 
@@ -64,12 +64,12 @@ class SG2SC(DatasetDecoratorBase):
                 sample_params["sizes"],
                 sample_params["angles"]
             ], axis=-1)
-            # room_mask = sample_params["room_layout"]
+            room_mask = sample_params["room_mask"]
             if self.objfeat_type is not None:
                 objfeats = sample_params[f"{self.objfeat_type}_features"]
 
             sample_params_pad["scene_uids"].append(scene_uid)
-            # sample_params_pad["room_masks"].append(room_mask)
+            sample_params_pad["room_masks"].append(room_mask)
 
             sample_params_pad["objs"].append(np.pad(
                 objs, (0, max_length - objs.shape[0]),
@@ -277,7 +277,7 @@ def dataset_encoding_factory(
     if "cached" in name:
         dataset_collection = OrderedDataset(
             CachedDatasetCollection(dataset),
-            ["class_labels", "translations", "sizes", "angles"],
+            ["class_labels", "translations", "sizes", "angles", "image_path"],
             box_ordering=box_ordering
         )
     else:
@@ -353,7 +353,7 @@ def dataset_encoding_factory(
 
     permute_keys = [
         "class_labels", "translations", "sizes", "angles",
-        "relations", "descriptions", "openshape_vitg14_features"
+        "relations", "descriptions", "openshape_vitg14_features", 
     ]
 
     ################################################################

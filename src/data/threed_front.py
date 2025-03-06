@@ -8,6 +8,7 @@
 
 from collections import Counter, OrderedDict
 from functools import lru_cache
+from pathlib import Path
 import numpy as np
 import json
 import os
@@ -362,7 +363,10 @@ class CachedThreedFront(ThreedFront):
             os.path.join(self._base_dir, pi, "descriptions.pkl")
             for pi in self._tags
         ])
-
+        self._path_to_room_masks = sorted([
+            os.path.join(self._base_dir, pi, "room_mask.png")
+            for pi in self._tags
+        ])
         ################################ For InstructScene END ################################
 
     def _get_room_layout(self, room_layout):
@@ -391,12 +395,18 @@ class CachedThreedFront(ThreedFront):
             image_path=self._path_to_renders[i]
         )
 
+    def binarize_image(self, image_path, threshold=128):
+        img = Image.open(image_path).convert('L')
+        img_array = np.array(img)
+        binary_array = (img_array > threshold).astype(np.uint8) * 255
+        return binary_array
+
+
     def get_room_params(self, i):
         D = np.load(self._path_to_rooms[i])
 
         room = self._get_room_layout(D["room_layout"])
         room = np.transpose(room[:, :, None], (2, 0, 1))
-
         return {
             "room_layout": room,
             "class_labels": D["class_labels"],
@@ -408,8 +418,13 @@ class CachedThreedFront(ThreedFront):
             "models_info_path": self._path_to_models_info[i],
             "openshape_vitg14_path": self._path_to_openshape_pointbert_vitg14_pc_features[i],
             "relation_path": self._path_to_relations[i],
-            "description_path": self._path_to_descriptions[i]
+            "description_path": self._path_to_descriptions[i],
+            "room_mask_path": self._path_to_room_masks[i],
+            "room_mask": self.binarize_image(self._path_to_room_masks[i]),
             ################################ For InstructScene END ################################
+            "floor_plan_vertices": D["floor_plan_vertices"],
+            "floor_plan_faces": D["floor_plan_faces"],
+            "floor_plan_centroid": D["floor_plan_centroid"],
         }
 
     def __len__(self):

@@ -39,7 +39,7 @@ class Attention(nn.Module):
         mask: Optional[LongTensor]=None, context_mask: Optional[LongTensor]=None
     ):
         h = self.n_heads
-
+        # print(x.shape)
         q = self.to_q(x)  # (b, n, d*h)
         if mask is not None:
             q = q * mask.unsqueeze(-1)
@@ -49,7 +49,9 @@ class Attention(nn.Module):
             context = x
             context_mask = mask
 
+        # print(context.shape)
         k = self.to_k(context)  # (b, m, d*h)
+        # print(k.shape)
         v = self.to_v(context)  # (b, m, d*h)
         if context_mask is not None:
             k = k * context_mask.unsqueeze(-1)
@@ -337,8 +339,8 @@ class GraphTransformerBlock(nn.Module):
 
     def forward(self,
         x: Tensor, e: Tensor, y: Optional[Tensor]=None,
-        t_emb: Optional[Tensor]=None, context: Optional[Tensor]=None,
-        mask: Optional[LongTensor]=None, context_mask: Optional[LongTensor]=None
+        t_emb: Optional[Tensor]=None, condition: Optional[Tensor]=None,
+        mask: Optional[LongTensor]=None, condition_mask: Optional[LongTensor]=None
     ):
         # 1. Graph attention
         x_norm = self.ga_x_norm(x, t_emb) if self.ada_norm else self.ga_x_norm(x)
@@ -353,13 +355,13 @@ class GraphTransformerBlock(nn.Module):
             y = y_ + y
 
         # 2. (Optional) Cross-attention with nodes(edges) and context
-        if context is not None:
+        if condition is not None:
             x_norm = self.ca_norm(x, t_emb) if self.ada_norm else self.ca_norm(x)
-            x = self.cross_attn(x_norm, context, mask, context_mask) + x
+            x = self.cross_attn(x_norm, condition, mask, condition_mask) + x
             if self.use_e_cross_attn:
                 e_norm = self.ca_norm_e(e, t_emb) if self.ada_norm else self.ca_norm_e(e)
                 e_norm = rearrange(e_norm, "b n m d -> b (n m) d")
-                e_ = self.cross_attn_e(e_norm, context, mask, context_mask)
+                e_ = self.cross_attn_e(e_norm, condition, mask, condition_mask)
                 e_ = rearrange(e_, "b (n m) d -> b n m d", n=e.shape[1])
                 e = e_ + e
 

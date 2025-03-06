@@ -14,16 +14,16 @@ from src.utils.logger import StatsLogger
 
 class SgObjfeatVQDiffusion(nn.Module):
     def __init__(self,
-        num_objs: int,
-        num_preds: int,
-        num_timesteps=100,
-        parameterization="x0",
-        sample_method="importance",
-        mask_weight=[1., 1.],
-        auxiliary_loss_weight=5e-4,
-        adaptive_auxiliary_loss=True,
-        cfg_drop_ratio=0.2,
-        text_emb_dim=512
+        num_objs: int,          # 对象类别数量
+        num_preds: int,         # 关系类别数量 
+        num_timesteps=100,      # 扩散步数
+        parameterization="x0",  # 参数化方式
+        sample_method="importance",  # 采样方法
+        mask_weight=[1., 1.],   # 掩码权重
+        auxiliary_loss_weight=5e-4,  # 辅助损失权重
+        adaptive_auxiliary_loss=True,  # 是否使用自适应辅助损失
+        cfg_drop_ratio=0.2,     # 分类器引导dropout比率
+        text_emb_dim=512        # 文本嵌入维度
     ):
         super().__init__()
 
@@ -93,11 +93,23 @@ class SgObjfeatVQDiffusion(nn.Module):
         self.cfg_scale = 1.  # for information logging
 
     def compute_losses(self,
-        sample_params: Dict[str, Tensor],
-        text_last_hidden_state: Optional[Tensor]=None,
-        text_embeds: Optional[Tensor]=None,
-        edge_weight=10.
+        sample_params: Dict[str, Tensor],  # 样本参数字典
+        text_last_hidden_state: Optional[Tensor]=None,  # 文本编码器最后一层隐状态
+        text_embeds: Optional[Tensor]=None,  # 文本全局嵌入
+        edge_weight=10.  # 边损失的权重
     ):
+        """计算训练损失
+
+        Args:
+            sample_params: 包含对象标签、边标签和对象特征的字典
+            text_last_hidden_state: 文本编码器输出的序列特征
+            text_embeds: 文本编码器输出的全局特征
+            edge_weight: 边预测损失的权重
+
+        Returns:
+            losses: 包含节点、边和对象特征的损失字典
+        """
+
         # Unpack sample parameters
         x = sample_params["objs"]
         e = sample_params["edges"]
@@ -134,14 +146,22 @@ class SgObjfeatVQDiffusion(nn.Module):
 
     @torch.no_grad()
     def generate_samples(self,
-        batch_size: int, num_nodes: int,
-        text_last_hidden_state: Optional[Tensor]=None,
-        text_embeds: Optional[Tensor]=None,
-        filter_ratio=0.,
-        cfg_scale=1.,
-        truncation_rate=1.,
-        skip_step=0
+        batch_size: int,        # 批大小
+        num_nodes: int,         # 每个场景的节点数
+        text_last_hidden_state: Optional[Tensor]=None,  # 文本序列特征
+        text_embeds: Optional[Tensor]=None,            # 文本全局特征  
+        filter_ratio=0.,        # 过滤比率,控制从哪一步开始生成
+        cfg_scale=1.,          # 分类器引导的缩放因子
+        truncation_rate=1.,    # 截断采样的比率
+        skip_step=0            # 跳过的步数,用于加速采样
     ):
+        """生成新的场景图
+        
+        从纯噪声开始,通过迭代去噪生成完整的场景图,包括:
+        1. 对象类别
+        2. 对象间关系
+        3. 对象的视觉特征
+        """
         self.cfg_scale = cfg_scale
         device = next(self.parameters()).device
 
@@ -858,9 +878,20 @@ def alpha_schedule(time_step: int, N: int, att_1=0.99999, att_T=0.000009, ctt_1=
 
 
 class SgObjfeatTransformerVQDiffusionWrapper(nn.Module):
+    """场景图生成的Transformer架构
+    
+    包含以下主要组件:
+    1. 对象、关系和时间步的嵌入层
+    2. 对象特征的编码和解码模块
+    3. 图注意力模块,用于建模对象间的关系
+    4. 输出头,分别预测对象类别、关系类别和对象特征
+    """
+
     def __init__(self,
-        node_dim: int, edge_dim: int,
-        num_objfeat_embeds: int, objfeat_dim: int,
+        node_dim: int,         # 对象类别数(包含特殊token) 
+        edge_dim: int,         # 关系类别数(包含特殊token)
+        num_objfeat_embeds: int,  # VQ编码本大小
+        objfeat_dim: int,         # 对象特征维度
         attn_dim=512, t_dim=128,
         global_dim: Optional[int]=None,
         context_dim: Optional[int]=None,
