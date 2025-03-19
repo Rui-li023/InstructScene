@@ -255,12 +255,15 @@ def main():
         edges = batch["edges"]
         objfeat_vq_indices = batch["objfeat_vq_indices"]
         obj_masks = batch["obj_masks"]
+        room_masks = batch["room_masks"]  # (B, 256, 256)
+        print(room_masks.shape)
         # Generate the box parameters
         with torch.no_grad():
             boxes_pred = model.generate_samples(
                 objs, edges, objfeat_vq_indices, obj_masks,
                 vqvae_model,
-                cfg_scale=args.cfg_scale
+                cfg_scale=args.cfg_scale,
+                room_masks=room_masks
             )
 
         # Decode objfeat indices to objfeat embeddings

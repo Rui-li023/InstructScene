@@ -1,7 +1,7 @@
-# conda create -n instructscene python=3.9
-# conda activate instructscene
+conda create -n instructscene python=3.9
+conda activate instructscene
 
-pip3 install -i https://download.pytorch.org/whl/cu121 -U torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0
+pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu124
 pip3 install -r settings/requirements.txt
 
 python3 -c "import nltk; nltk.download('cmudict')"

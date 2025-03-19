@@ -1,3 +1,11 @@
+```python
+python src/train_fl_sg2lt.py /home/ubuntu/Documents/ACDC_project/InstructScene/configs/bedroom_sgfl2lt_diffusion_objfeat.yaml --fvqvae_tag threedfront_objfeat_vqvae
+
+python src/generate_sg2sc.py ./configs/bedroom_sgfl2lt_diffusion_objfeat.yaml --fvqvae_tag threedfront_objfeat_vqvae --checkpoint_epoch 249 --cfg_scale 1 --n_scenes 0 --tag 2025-03-06_18:57 --visualize
+
+python3 src/compute_fid_scores.py configs/bedroom_sgfl2lt_diffusion_objfeat.yaml --tag 2025-03-06_18:57 --checkpoint_epoch 249
+```
+
 # [ICLR 2024 spotlight] InstructScene
 
 <h4 align="center">
@@ -43,14 +51,6 @@ You may also be interested in our other works:
 - **2024-02-28**: The source code and preprocessed dataset are released.
 - **2024-02-07**: The paper is available on arXiv.
 - **2024-01-16**: InstructScene is accepted to ICLR 2024 for spotlight presentation.
-
-
-## 📋 TODO
-
-- [x] Release the training and evaluation code.
-- [x] Release the preprocessed dataset and rendered images on HuggingFace.
-- [x] Release the pretrained weights of fVQ-VAE to quantize OpenShape features of 3D-FRONT objects.
-- [x] Release the script for caption refinement by OpenAI ChatGPT.
 
 
 ## 🔧 Installation

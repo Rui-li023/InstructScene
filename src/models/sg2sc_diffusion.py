@@ -66,14 +66,19 @@ class Sg2ScDiffusion(nn.Module):
 
     def compute_losses(self, sample_params: Dict[str, Tensor], vqvae_model: nn.Module) -> Dict[str, Tensor]:
         # Unpack sample params
+        # N 代表物体的数量
         x = sample_params["objs"]          # (B, N)
         e = sample_params["edges"]         # (B, N, N)
-        o = sample_params["objfeat_vq_indices"]  # (B, N, K)
+        o = sample_params["objfeat_vq_indices"]  # (B, N, K) K=4
+        # print(o.shape)
+        # print(o)
         room_masks = sample_params["room_masks"]  # (B, 256, 256)
         mask = sample_params["obj_masks"]  # (B, N)
         boxes = sample_params["boxes"]     # (B, N, 8) x, y ,z ,dx, dy, dz, cos, sin
         noise = torch.randn_like(boxes)
-
+        
+        # print(boxes)
+        # print(boxes.shape)
         B, device = x.shape[0], x.device
         timesteps = torch.randint(1, self.scheduler.config.num_train_timesteps, (B,)).to(device)
         room_masks = room_masks.unsqueeze(-1)
@@ -94,7 +99,8 @@ class Sg2ScDiffusion(nn.Module):
                 ).reshape(B, N, -1)
         else:
             o = None
-
+        
+        # print(o.shape)
         pred = self.network(
             noisy_boxes, x, e, o,  # `x`, `e` and `o` as conditions
             timesteps, mask=mask, condition=room_masks
@@ -117,7 +123,8 @@ class Sg2ScDiffusion(nn.Module):
         x: LongTensor, e: LongTensor, o: Optional[LongTensor], mask: LongTensor,
         vqvae_model: nn.Module,
         num_timesteps: Optional[int]=100,
-        cfg_scale=1.
+        cfg_scale=1.,
+        room_masks: Optional[Tensor]=None
     ):
         self.cfg_scale = cfg_scale
         B, N, device = x.shape[0], x.shape[1], x.device
@@ -138,11 +145,13 @@ class Sg2ScDiffusion(nn.Module):
         box_mask = mask.unsqueeze(-1)  # (B, N, 1)
         boxes = boxes * box_mask
 
+        room_masks = room_masks.unsqueeze(-1)
+        
         if num_timesteps is None:
             num_timesteps = self.scheduler.config.num_train_timesteps
         self.scheduler.set_timesteps(num_timesteps)
         for t in tqdm(self.scheduler.timesteps, desc="Generating scenes", ncols=125):
-            pred = self.network(boxes, x, e, o, t, mask=mask, cfg_scale=cfg_scale) * box_mask
+            pred = self.network(boxes, x, e, o, t, mask=mask, cfg_scale=cfg_scale, condition=room_masks) * box_mask
             boxes = self.scheduler.step(pred, t, boxes).prev_sample * box_mask
 
         return boxes
@@ -302,7 +311,7 @@ class Sg2ScTransformerDiffusionWrapper(nn.Module):
                 t = t.unsqueeze(-1).to(x.device)
         # Broadcast to batch dimension, in a way that's campatible with ONNX/Core ML
         t = t * torch.ones(x.shape[0], dtype=t.dtype, device=t.device)
-
+        
         x_emb = self.node_embed(x)
         if o is not None:
             x_emb = self.node_proj_in(torch.cat([x_emb, o, box], dim=-1))
@@ -313,7 +322,7 @@ class Sg2ScTransformerDiffusionWrapper(nn.Module):
         if self.use_global_info:
             y_emb = t_emb
         else:
-            y_emb =None
+            y_emb = None
         if global_condition is not None:
             t_emb += self.global_condition_embed(global_condition)
 
