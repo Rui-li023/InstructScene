@@ -14,13 +14,14 @@ data:
     max_length: 12
 
 model:
-    name: "sg2sc_diffusion_objfeat_gtf"
+    name: "flsg2sc_diffusion_objfeat_gtf"
     feature_extractor:
         name: "resnet18"
         input_channels: 1
         feature_size: 128
         freeze_bn: true
         pretrained: true
+    text_encoder: "openai/clip-vit-large-patch14"
 
 training:
     splits: ["train", "val"]

@@ -208,6 +208,7 @@ def main():
     vqvae_model = vqvae_model.to(device)
     vqvae_model.eval()
 
+
     # Initialize the model
     model = model_from_config(
         config["model"],
@@ -256,7 +257,6 @@ def main():
         objfeat_vq_indices = batch["objfeat_vq_indices"]
         obj_masks = batch["obj_masks"]
         room_masks = batch["room_masks"]  # (B, 256, 256)
-        print(room_masks.shape)
         # Generate the box parameters
         with torch.no_grad():
             boxes_pred = model.generate_samples(

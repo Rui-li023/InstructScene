@@ -56,7 +56,7 @@ class ThreedFutureDataset(object):
         sorted_mses = [k for k, v in sorted(mses.items(), key=lambda x: x[1])]
         return sorted_mses[0]
 
-    ################################ For InstructScene BEGIN ################################
+    ################################ For Scene BEGIN ################################
 
     def get_closest_furniture_to_objfeat_and_size(self, query_label, query_size, query_objfeat, objfeat_type):
         # 1. Filter objects by label
@@ -80,7 +80,7 @@ class ThreedFutureDataset(object):
         sorted_mses = [k for k, v in sorted(mses.items(), key=lambda x:x[1])]
         return sorted_mses[0], cos_sims[sorted_mses[0]]  # return values of cossim for debugging
 
-    ################################ For InstructScene END ################################
+    ################################ For Scene END ################################
 
     @classmethod
     def from_dataset_directory(
@@ -98,7 +98,7 @@ class ThreedFutureDataset(object):
         return dataset
 
 
-################################ For InstructScene BEGIN ################################
+################################ For Scene BEGIN ################################
 
 class ThreedFutureFeatureDataset(ThreedFutureDataset):
     def __init__(self, objects, objfeat_type: str):
@@ -129,4 +129,4 @@ class ThreedFutureFeatureDataset(ThreedFutureDataset):
 
         return sample_batch
 
-################################ For InstructScene END ################################
+################################ For Scene END ################################

@@ -134,7 +134,7 @@ def rotate_rel(rel: str, r: float) -> str:
             }[rel.replace("closely ", "")]
 
 
-def model_desc_from_info(cate: str, style: str, theme: str, material: str, seed=None):
+def model_desc_from_info(cate: str, style=None, theme=None, material=None, seed=None):
     cate_name = {
         "desk":                                    "desk",
         "nightstand":                              "nightstand",

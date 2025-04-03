@@ -201,7 +201,7 @@ class ThreedFutureModel(BaseThreedFutureModel):
             "bbox_vertices.npy"
         )
 
-    ################################ For InstructScene BEGIN ################################
+    ################################ For Scene BEGIN ################################
 
     @property
     def path_to_openshape_vitg14_features(self):
@@ -211,7 +211,7 @@ class ThreedFutureModel(BaseThreedFutureModel):
             "openshape_pointbert_vitg14.npy"
         )
 
-    ################################ For InstructScene END ################################
+    ################################ For Scene END ################################
 
     def raw_model(self):
         try:
@@ -236,7 +236,7 @@ class ThreedFutureModel(BaseThreedFutureModel):
 
         return trimesh.Trimesh(vertices, faces)
 
-    ################################ For InstructScene BEGIN ################################
+    ################################ For Scene BEGIN ################################
 
     @cached_property
     def openshape_vitg14_features(self):
@@ -246,7 +246,7 @@ class ThreedFutureModel(BaseThreedFutureModel):
         else:
             return None
 
-    ################################ For InstructScene END ################################
+    ################################ For Scene END ################################
 
     def centroid(self, offset=[[0, 0, 0]]):
         return self.corners(offset).mean(axis=0)

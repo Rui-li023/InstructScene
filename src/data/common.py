@@ -73,7 +73,7 @@ class BaseDataset(Dataset):
         """The number of distinct objects contained in the scenes."""
         return len(self.object_types)
 
-    ################################ For InstructScene BEGIN ################################
+    ################################ For Scene BEGIN ################################
 
     # Predicate types in scene graphs
     @property
@@ -85,7 +85,7 @@ class BaseDataset(Dataset):
         """The number of predicates contained in the scene graphs."""
         return len(self.predicate_types)
 
-    ################################ For InstructScene END ################################
+    ################################ For Scene END ################################
 
     @property
     def room_types(self):

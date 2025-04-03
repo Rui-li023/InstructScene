@@ -367,6 +367,17 @@ class CachedThreedFront(ThreedFront):
             os.path.join(self._base_dir, pi, "room_mask.png")
             for pi in self._tags
         ])
+
+        # 加载CLIP特征字典
+        self.clip_features = {}
+        clip_feature_dir = "dataset/InstructScene/InstructScene/3D-FUTURE-chatgpt-clip-feature"
+        if os.path.exists(clip_feature_dir):
+            for feature_file in os.listdir(clip_feature_dir):
+                if feature_file.endswith('.npy'):
+                    model_id = feature_file.replace('.npy', '')
+                    feature_path = os.path.join(clip_feature_dir, feature_file)
+                    self.clip_features[model_id] = np.load(feature_path)
+
         ################################ For InstructScene END ################################
 
     def _get_room_layout(self, room_layout):
@@ -378,6 +389,27 @@ class CachedThreedFront(ThreedFront):
         )
         D = np.asarray(img).astype(np.float32) / np.float32(255)
         return D
+
+    def _load_descriptions_and_features(self, description_path):
+        """加载描述文件并按顺序获取特征"""
+        import pickle
+        
+        with open(description_path, 'rb') as f:
+            descriptions = pickle.load(f)
+            
+        # 提取模型ID列表
+        model_ids = [item.get('model_id', '') for item in descriptions]
+        
+        # 获取对应的特征
+        features = []
+        for model_id in model_ids:
+            if model_id in self.clip_features:
+                features.append(self.clip_features[model_id])
+            else:
+                # 如果没有找到特征，用零向量填充
+                features.append(np.zeros_like(next(iter(self.clip_features.values()))))
+                
+        return np.array(features) if features else np.array([])
 
     @lru_cache(maxsize=32)
     def __getitem__(self, i):
@@ -407,6 +439,11 @@ class CachedThreedFront(ThreedFront):
 
         room = self._get_room_layout(D["room_layout"])
         room = np.transpose(room[:, :, None], (2, 0, 1))
+        # print(D["class_labels"])
+
+        # 获取场景中物体的CLIP特征
+        clip_features = self._load_descriptions_and_features(self._path_to_models_info[i])
+
         return {
             "room_layout": room,
             "class_labels": D["class_labels"],
@@ -421,6 +458,7 @@ class CachedThreedFront(ThreedFront):
             "description_path": self._path_to_descriptions[i],
             "room_mask_path": self._path_to_room_masks[i],
             "room_mask": self.binarize_image(self._path_to_room_masks[i]),
+            "clip_features": clip_features,  # 添加CLIP特征到返回字典
             ################################ For InstructScene END ################################
             "floor_plan_vertices": D["floor_plan_vertices"],
             "floor_plan_faces": D["floor_plan_faces"],

@@ -348,6 +348,7 @@ class GraphTransformerBlock(nn.Module):
         if self.with_global_info:
             y_norm = self.ga_y_norm(y, t_emb) if self.ada_norm else self.ga_y_norm(y)
         else:
+            # 一般是 None
             y_norm = None
         x_, e_, y_ = self.graph_attn(x_norm, e_norm, y_norm, mask)
         x, e = x_ + x, e_ + e

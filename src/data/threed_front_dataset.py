@@ -27,10 +27,13 @@ class SG2SC(DatasetDecoratorBase):
             np.array(model_info["objfeat_vq_indices"])
             for model_info in models_info
         ]
+        clip_features = sample_params['clip_features']
         # Permutation augmentation
         if "permutation" in sample_params:
             objfeat_vq_indices = [objfeat_vq_indices[i] for i in sample_params["permutation"]]
-
+            clip_features = [clip_features[i] for i in sample_params["permutation"]]
+            
+        sample_params_new['clip_features'] = np.vstack(clip_features)
         sample_params_new["objfeat_vq_indices"] = np.vstack(objfeat_vq_indices)  # (n, k)
 
         sample_params.update(sample_params_new)
@@ -43,13 +46,14 @@ class SG2SC(DatasetDecoratorBase):
     def collate_fn(self, samples):
         # Pad the batch to the local maximum number of objects
         sample_params_pad = {
-            "scene_uids": [],  # str; (bs,)
-            "boxes": [],       # Tensor; (bs, n, 8)
-            "objs": [],        # Tensor; (bs, n)
-            "edges": [],       # Tensor; (bs, n, n)
-            "obj_masks": [],   # LongTensor; (bs, n)
-            "room_masks": [],  # Tensor; (bs, 1, 256, 256)
-            "objfeat_vq_indices": []  # LongTensor; (bs, n, k)
+            "scene_uids": [],    # str; (bs,)
+            "boxes": [],         # Tensor; (bs, n, 8)
+            "objs": [],          # Tensor; (bs, n)
+            "edges": [],         # Tensor; (bs, n, n)
+            "obj_masks": [],     # LongTensor; (bs, n)
+            "room_masks": [],    # Tensor; (bs, 1, 256, 256)
+            "objfeat_vq_indices": [],  # LongTensor; (bs, n, k)
+            "clip_features": []  # Tensor; (bs, n, 1280)
         }
 
         # Compute the max length of the sequences in the batch
@@ -105,6 +109,11 @@ class SG2SC(DatasetDecoratorBase):
             objfeat_vq_indices_pad[:objfeat_vq_indices.shape[0]] = objfeat_vq_indices  # pad with random indices (not really used)
             sample_params_pad["objfeat_vq_indices"].append(objfeat_vq_indices_pad)  # (n, k)
 
+            clip_feats = sample_params["clip_features"]
+            clip_feats_pad = np.random.uniform(-2, 2, size=(max_length, clip_feats.shape[1]))
+            clip_feats_pad[:clip_feats.shape[0]] = clip_feats
+            sample_params_pad["clip_features"].append(clip_feats_pad)
+
             obj_mask = np.zeros(max_length, dtype=np.int64)  # (n,)
             obj_mask[:sample_params["length"]] = 1
             sample_params_pad["obj_masks"].append(obj_mask)
@@ -113,7 +122,7 @@ class SG2SC(DatasetDecoratorBase):
         for k, v in sample_params_pad.items():
             if k == "scene_uids":
                 sample_params_pad[k] = v
-            elif k in ["boxes", "room_masks"]:
+            elif k in ["boxes", "room_masks", "clip_features"]:
                 sample_params_pad[k] = torch.from_numpy(np.stack(v, axis=0)).float()
             else:
                 sample_params_pad[k] = torch.from_numpy(np.stack(v, axis=0)).long()
@@ -275,6 +284,7 @@ def dataset_encoding_factory(
     #       be done after the augmentations. For class frequencies it is fine
     #       though.
     if "cached" in name:
+        # mainly use cached dataset
         dataset_collection = OrderedDataset(
             CachedDatasetCollection(dataset),
             ["class_labels", "translations", "sizes", "angles", "image_path"],

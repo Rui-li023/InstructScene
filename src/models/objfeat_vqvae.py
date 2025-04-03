@@ -59,10 +59,12 @@ class ObjectFeatureVQVAE(nn.Module):
 
     @torch.no_grad()
     def quantize_to_indices(self, features: Tensor) -> LongTensor:
+        # print(self.objfeat_min, self.objfeat_max)
+        # print(features.min(), features.max())
         assert self.objfeat_min is not None and self.objfeat_max is not None, \
             "Object feature min/max must be set before computing losses"
         assert torch.all(features >= self.objfeat_min) and torch.all(features <= self.objfeat_max)
-
+        
         # Pre-processing
         features = (features - self.objfeat_min) / (self.objfeat_max - self.objfeat_min)  # [0, 1]
         features = features * 2. - 1.  # [-1, 1]

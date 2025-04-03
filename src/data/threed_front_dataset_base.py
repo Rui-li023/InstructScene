@@ -63,7 +63,7 @@ class DatasetDecoratorBase(Dataset):
     def bbox_dims(self):
         raise NotImplementedError()
 
-    ################################ For InstructScene BEGIN ################################
+    ################################ For Scene BEGIN ################################
 
     # Get the number of predicate types in scene graphs
     @property
@@ -80,7 +80,7 @@ class DatasetDecoratorBase(Dataset):
     def max_length(self):
         return self._dataset.max_length 
 
-    ################################ For InstructScene END ################################
+    ################################ For Scene END ################################
 
     def post_process(self, s):
         return self._dataset.post_process(s)
@@ -462,7 +462,7 @@ class Permutation(DatasetDecoratorBase):
             if k not in sample_params:
                 continue
 
-            ################################ For InstructScene BEGIN ################################
+            ################################ For Scene BEGIN ################################
 
             if k == "relations":
                 if sample_params[k].shape[0] > 0:
@@ -477,7 +477,7 @@ class Permutation(DatasetDecoratorBase):
                     s_new, o_new = idx_mapping[s], idx_mapping[o]
                     sample_params[k]["obj_relations"][i] = (s_new, p, o_new)
 
-            ################################ For InstructScene END ################################
+            ################################ For Scene END ################################
 
             else:
                 sample_params[k] = sample_params[k][ordering]
@@ -516,7 +516,7 @@ class OrderedDataset(DatasetDecoratorBase):
         return np.lexsort(np.hstack([t, f]).T)[::-1]
 
 
-################################ For InstructScene BEGIN ################################
+################################ For Scene BEGIN ################################
 
 class Add_SceneGraph(DatasetDecoratorBase):
     def __init__(self, dataset):
@@ -701,4 +701,4 @@ def trs_to_corners(t: np.ndarray, r: float, s: np.ndarray) -> np.ndarray:
 
     return (template * s).dot(R) + t
 
-################################ For InstructScene END ################################
+################################ For Scene END ################################

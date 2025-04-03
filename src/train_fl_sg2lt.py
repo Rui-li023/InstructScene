@@ -146,10 +146,11 @@ def main():
         split=config["validation"].get("splits", ["test"])
     )
     print(f"Load [{len(val_dataset)}] validation scenes with [{val_dataset.n_object_types}] object types\n")
-    print(train_dataset[0])
+    # print(train_dataset[0])
     # Make sure that the `train_dataset` and the `val_dataset` have the same number of object categories
     assert train_dataset.object_types == val_dataset.object_types
 
+    # print(train_dataset[0])
     train_loader = MultiEpochsDataLoader(
         train_dataset,
         batch_size=config["training"]["batch_size"],
@@ -241,7 +242,7 @@ def main():
             # Zero previous gradients
             optimizer.zero_grad()
             # Compute the loss
-            losses = model.compute_losses(batch, vqvae_model=vqvae_model)
+            losses = model.compute_losses(batch)
             total_loss = torch.zeros(1, device=device)
             for k, v in losses.items():
                 if k in loss_weights:
@@ -285,7 +286,7 @@ def main():
                         if not isinstance(v, list):
                             val_batch[k] = v.to(device)
                     # Compute the loss
-                    val_losses = model.compute_losses(val_batch, vqvae_model=vqvae_model)
+                    val_losses = model.compute_losses(val_batch)
                     val_total_loss = torch.zeros(1, device=device)
                     for k, v in val_losses.items():
                         if k in loss_weights:

@@ -216,10 +216,16 @@ def save_images(scene_dir: str) -> None:
             scene.render.filepath = render_path
             bpy.ops.render.render(write_still=True)
 
+def save_scene_as_blend(output_path: str) -> None:
+    """Saves the current Blender scene as a .blend file."""
+    bpy.ops.wm.save_as_mainfile(filepath=output_path)
 
 if __name__ == "__main__":
     start_i = time.time()
     save_images(args.scene_dir)
     end_i = time.time()
 
+    blend_file_path = os.path.join(args.scene_dir, "scene.blend")
+    save_scene_as_blend(blend_file_path)
+    
     print(f">>> Rendering scene from {args.scene_dir} in [{round(end_i - start_i, 2)}] seconds")

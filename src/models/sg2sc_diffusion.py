@@ -140,6 +140,33 @@ class Sg2ScDiffusion(nn.Module):
             o = None
 
         boxes = torch.randn(B, N, 8).to(device)
+        # Mask out the padding boxes
+        box_mask = mask.unsqueeze(-1)  # (B, N, 1)
+        boxes = boxes * box_mask
+
+        room_masks = room_masks.unsqueeze(-1)
+
+        if num_timesteps is None:
+            num_timesteps = self.scheduler.config.num_train_timesteps
+        self.scheduler.set_timesteps(num_timesteps)
+        for t in tqdm(self.scheduler.timesteps, desc="Generating scenes", ncols=125):
+            pred = self.network(boxes, x, e, o, t, mask=mask, cfg_scale=cfg_scale, condition=room_masks) * box_mask
+            boxes = self.scheduler.step(pred, t, boxes).prev_sample * box_mask
+
+        return boxes
+
+
+    @torch.no_grad()
+    def generate_samples1(self,
+        x: LongTensor, e: LongTensor, o: Optional[LongTensor], mask: LongTensor,
+        num_timesteps: Optional[int]=100,
+        cfg_scale=1.,
+        room_masks: Optional[Tensor]=None
+    ):
+        self.cfg_scale = cfg_scale
+        B, N, device = x.shape[0], x.shape[1], x.device
+        print(device)
+        boxes = torch.randn(B, N, 8).to(device)
 
         # Mask out the padding boxes
         box_mask = mask.unsqueeze(-1)  # (B, N, 1)
@@ -155,8 +182,7 @@ class Sg2ScDiffusion(nn.Module):
             boxes = self.scheduler.step(pred, t, boxes).prev_sample * box_mask
 
         return boxes
-
-
+    
     @torch.no_grad()
     def complete(self,
         sample_params: Dict[str, Tensor],
@@ -313,6 +339,7 @@ class Sg2ScTransformerDiffusionWrapper(nn.Module):
         t = t * torch.ones(x.shape[0], dtype=t.dtype, device=t.device)
         
         x_emb = self.node_embed(x)
+        print(x_emb.shape, o.shape, box.shape)
         if o is not None:
             x_emb = self.node_proj_in(torch.cat([x_emb, o, box], dim=-1))
         else:

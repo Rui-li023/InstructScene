@@ -52,7 +52,6 @@ def get_dataset_raw_and_encoded(
     split=["train", "val"]
 ):
     dataset = get_raw_dataset(config, filter_fn, path_to_bounds, split=split)
-    # print(dataset[0])
     encoding = dataset_encoding_factory(
         config.get("encoding_type"),
         dataset,

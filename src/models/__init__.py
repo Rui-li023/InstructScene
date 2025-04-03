@@ -9,7 +9,7 @@ from torch import optim
 from .objfeat_vqvae import ObjectFeatureVQVAE
 from .sg_diffusion_vq_objfeat import SgObjfeatVQDiffusion
 from .sg2sc_diffusion import Sg2ScDiffusion
-
+from .fl_sg2sc_diffusion import Flsg2ScDiffusion
 
 def model_from_config(
     config: Dict[str, Any],
@@ -18,7 +18,11 @@ def model_from_config(
     **kwargs
 ):
     # Scene graph to scene layout
-    if "sg2sc" in config["name"]:
+    if "flsg" in config["name"]:
+        return Flsg2ScDiffusion(
+            num_objs, num_preds,
+        )
+    elif "sg2sc" in config["name"]:
         if "diffusion" in config["name"]:
             return Sg2ScDiffusion(
                 num_objs, num_preds,
