@@ -6,8 +6,6 @@
 You may need to modify the specific version of `torch` in `settings/setup.sh` according to your CUDA version.
 There are not restrictions on the `torch` version, feel free to use your preferred one.
 ```bash
-git clone https://github.com/chenguolin/InstructScene.git
-cd InstructScene
 bash settings/setup.sh
 ```
 
@@ -22,7 +20,7 @@ rm blender-3.3.1-linux-x64.tar.xz
 
 ## Dataset
 
-Dataset used in InstructScene is based on [3D-FORNT](https://tianchi.aliyun.com/specials/promotion/alibaba-3d-scene-dataset) and [3D-FUTURE](https://tianchi.aliyun.com/specials/promotion/alibaba-3d-future).
+Dataset used in Scene is based on [3D-FORNT](https://tianchi.aliyun.com/specials/promotion/alibaba-3d-scene-dataset) and [3D-FUTURE](https://tianchi.aliyun.com/specials/promotion/alibaba-3d-future).
 Please refer to the instructions provided in their [official website](https://tianchi.aliyun.com/dataset/65347) to download the original dataset.
 One can refer to the dataset preprocessing scripts in [ATISS](https://github.com/nv-tlabs/ATISS?tab=readme-ov-file#dataset) and [DiffuScene](https://github.com/tangjiapeng/DiffuScene?tab=readme-ov-file#dataset), which are similar to ours.
 
@@ -45,6 +43,8 @@ We provide a helpful script to visualize synthesized scenes by [Blender](https:/
 Please refer to [blender/README.md](./blender/README.md) for more details.
 
 We also provide many useful visualization functions in [src/utils/visualize.py](./src/utils/visualize.py), including creating appropriate floor plans, drawing scene graphs, adding instructions as titles in the rendered images, making gifs, etc.
+
+
 
 ```python
 python src/train_fl_sg2lt.py /home/ubuntu/Documents/ACDC_project/InstructScene/configs/bedroom_sgfl2lt_diffusion_objfeat.yaml --fvqvae_tag threedfront_objfeat_vqvae

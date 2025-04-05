@@ -41,7 +41,7 @@ class ThreedFront(BaseDataset):
             self._centroids = bounds["translations"]
             self._angles = bounds["angles"]
 
-        ################################ For InstructScene BEGIN ################################
+        ################################ For Scene BEGIN ################################
 
             # Prepare the bound file provided by the preprocessed dataset
             if "openshape_vitg14" in bounds:
@@ -52,7 +52,7 @@ class ThreedFront(BaseDataset):
 
         self._max_length = None
 
-        ################################ For InstructScene END ################################
+        ################################ For Scene END ################################
 
     def __str__(self):
         return "Dataset contains {} scenes with {} discrete types".format(
@@ -88,13 +88,13 @@ class ThreedFront(BaseDataset):
         _angle_min = np.array([10000000000])
         _angle_max = np.array([-10000000000])
 
-        ################################ For InstructScene BEGIN ################################
+        ################################ For Scene BEGIN ################################
 
         _openshape_vitg14_min = np.array([10000000])
         _openshape_vitg14_max = np.array([-10000000])
         all_openshape_vitg14 = []
 
-        ################################ For InstructScene END ################################
+        ################################ For Scene END ################################
 
         for s in self.scenes:
             for f in s.bboxes:
@@ -108,25 +108,25 @@ class ThreedFront(BaseDataset):
                 _angle_min = np.minimum(f.z_angle, _angle_min)
                 _angle_max = np.maximum(f.z_angle, _angle_max)
 
-                ################################ For InstructScene BEGIN ################################
+                ################################ For Scene BEGIN ################################
 
                 if f.openshape_vitg14_features is not None:
                     all_openshape_vitg14.append(f.openshape_vitg14_features)
 
-                ################################ For InstructScene END ################################
+                ################################ For Scene END ################################
 
         self._sizes = (_size_min, _size_max)
         self._centroids = (_centroid_min, _centroid_max)
         self._angles = (_angle_min, _angle_max)
 
-        ################################ For InstructScene BEGIN ################################
+        ################################ For Scene BEGIN ################################
 
         if len(all_openshape_vitg14) > 0:
             all_openshape_vitg14 = np.stack(all_openshape_vitg14, axis=0)
             _openshape_vitg14_min, _openshape_vitg14_max = np.array([all_openshape_vitg14.min()]), np.array([all_openshape_vitg14.max()])
             self._openshape_vitg14 = (_openshape_vitg14_min, _openshape_vitg14_max)
 
-        ################################ For InstructScene END ################################
+        ################################ For Scene END ################################
 
     @property
     def bounds(self):
@@ -136,12 +136,12 @@ class ThreedFront(BaseDataset):
             "angles": self.angles
         }
 
-        ################################ For InstructScene BEGIN ################################
+        ################################ For Scene BEGIN ################################
 
         if self.openshape_vitg14 is not None:
             bounds["openshape_vitg14_features"] = self.openshape_vitg14
 
-        ################################ For InstructScene END ################################
+        ################################ For Scene END ################################
 
         return bounds
 
@@ -163,7 +163,7 @@ class ThreedFront(BaseDataset):
             self._compute_bounds()
         return self._angles
 
-    ################################ For InstructScene BEGIN ################################
+    ################################ For Scene BEGIN ################################
 
     @property
     def openshape_vitg14(self):
@@ -171,7 +171,7 @@ class ThreedFront(BaseDataset):
             self._compute_bounds()
         return self._openshape_vitg14
 
-    ################################ For InstructScene END ################################
+    ################################ For Scene END ################################
 
     @property
     def count_furniture(self):
@@ -211,7 +211,7 @@ class ThreedFront(BaseDataset):
             self._object_types = sorted(self._object_types)
         return self._object_types
 
-    ################################ For InstructScene BEGIN ################################
+    ################################ For Scene BEGIN ################################
 
     # Set the predicate types for scene graphs of 3D-FRONT
     @property
@@ -223,7 +223,7 @@ class ThreedFront(BaseDataset):
             "closely right of", "closely behind"
         ]
 
-    ################################ For InstructScene END ################################
+    ################################ For Scene END ################################
 
     @property
     def room_types(self):
@@ -235,7 +235,7 @@ class ThreedFront(BaseDataset):
     def class_labels(self):
         return self.object_types + ["start", "end"]
 
-    ################################ For InstructScene BEGIN ################################
+    ################################ For Scene BEGIN ################################
 
     # Set the max input length for diffusion models
     @property
@@ -253,7 +253,7 @@ class ThreedFront(BaseDataset):
 
         return self._max_length
 
-    ################################ For InstructScene END ################################
+    ################################ For Scene END ################################
 
     @classmethod
     def from_dataset_directory(cls, dataset_directory, path_to_model_info,
@@ -312,11 +312,11 @@ class CachedThreedFront(ThreedFront):
         self._base_dir = base_dir
         self.config = config
 
-        ################################ For InstructScene BEGIN ################################
+        ################################ For Scene BEGIN ################################
 
         self._max_length = self.config.get("max_length", None)
 
-        ################################ For InstructScene END ################################
+        ################################ For Scene END ################################
 
         self._parse_train_stats(config["train_stats"])
 
@@ -343,7 +343,7 @@ class CachedThreedFront(ThreedFront):
             for pi in self._tags
         ])
 
-        ################################ For InstructScene BEGIN ################################
+        ################################ For Scene BEGIN ################################
 
         self._path_to_models_info = sorted([
             os.path.join(self._base_dir, pi, "models_info.pkl")
@@ -378,7 +378,7 @@ class CachedThreedFront(ThreedFront):
                     feature_path = os.path.join(clip_feature_dir, feature_file)
                     self.clip_features[model_id] = np.load(feature_path)
 
-        ################################ For InstructScene END ################################
+        ################################ For Scene END ################################
 
     def _get_room_layout(self, room_layout):
         # Resize the room_layout if needed
@@ -450,7 +450,7 @@ class CachedThreedFront(ThreedFront):
             "translations": D["translations"],
             "sizes": D["sizes"],
             "angles": D["angles"],
-            ################################ For InstructScene BEGIN ################################
+            ################################ For Scene BEGIN ################################
             "scene_uid": D["scene_uid"],
             "models_info_path": self._path_to_models_info[i],
             "openshape_vitg14_path": self._path_to_openshape_pointbert_vitg14_pc_features[i],
@@ -459,7 +459,7 @@ class CachedThreedFront(ThreedFront):
             "room_mask_path": self._path_to_room_masks[i],
             "room_mask": self.binarize_image(self._path_to_room_masks[i]),
             "clip_features": clip_features,  # 添加CLIP特征到返回字典
-            ################################ For InstructScene END ################################
+            ################################ For Scene END ################################
             "floor_plan_vertices": D["floor_plan_vertices"],
             "floor_plan_faces": D["floor_plan_faces"],
             "floor_plan_centroid": D["floor_plan_centroid"],
@@ -492,7 +492,7 @@ class CachedThreedFront(ThreedFront):
         self._class_order = train_stats["class_order"]
         self._count_furniture = train_stats["count_furniture"]
 
-        ################################ For InstructScene BEGIN ################################
+        ################################ For Scene BEGIN ################################
 
         self._openshape_vitg14 = None
         if "bounds_openshape_vitg14_features" in train_stats:
@@ -502,7 +502,7 @@ class CachedThreedFront(ThreedFront):
                 np.array(self._openshape_vitg14[1])
             )
 
-        ################################ For InstructScene END ################################
+        ################################ For Scene END ################################
 
     @property
     def class_labels(self):
