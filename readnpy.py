@@ -1,7 +1,7 @@
 import numpy as np
 
 # 文件路径
-file_path = "dataset/InstructScene/InstructScene/threed_front_bedroom/00110bde-f580-40be-b8bb-88715b338a2a_Bedroom-43072/openshape_pointbert_vitg14.npy"
+file_path = "dataset/InstructScene/InstructScene/threed_front_bedroom/00110bde-f580-40be-b8bb-88715b338a2a_Bedroom-43072/relations.npy"
 
 # 读取 .npy 文件
 try:

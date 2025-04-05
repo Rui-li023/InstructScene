@@ -3,8 +3,9 @@ import os
 
 def read_pkl_file():
     # 定义文件路径
-    file_path = "dataset/InstructScene/InstructScene/threed_front_bedroom/00110bde-f580-40be-b8bb-88715b338a2a_Bedroom-43072/models_info.pkl"
-    
+    file_path = "dataset/InstructScene/InstructScene/threed_front_bedroom/0b4abd30-b157-4ecf-a077-989285598cf2_SecondBedroom-6482/descriptions.pkl"
+    # file_path = "dataset/InstructScene/InstructScene/threed_front_bedroom/0b4abd30-b157-4ecf-a077-989285598cf2_SecondBedroom-6482/models_info.pkl"
+    # file_path = "dataset/InstructScene/InstructScene/threed_future_model_bedroom.pkl"
     # 检查文件是否存在
     if not os.path.exists(file_path):
         print(f"错误：文件 {file_path} 不存在")

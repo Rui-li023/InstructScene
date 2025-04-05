@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 
-openai.api_key = "sk-uUtSQKCMVkTY5QDMzKR232unNfPF6UiCs4jhDsnk0RzlZN9B"
+openai.api_key = "sk-27N77PRBs8z9thzi0FpDGoKlEHwCdfiOk72wUp7vEexd1LCG"
 openai.base_url = "https://api.claudeshop.top/v1/"
 
 def parse_items(layout_result):
@@ -149,7 +149,7 @@ print(layout_result)
 items = parse_items(layout_result)
 pre_formatted_pairs = generate_pre_formatted_pairs(items)
 
-print(pre_formatted_pairs)
+print(pre_formatted_pairs, "\n")
 
 # 第二次提示词：基于第一次回复，要求描述物体间的相互关系
 prompt2 = f"""
@@ -160,12 +160,23 @@ You are an interior design assistant. Your task is to determine the positional r
 {layout_result}
 
 ### Instructions:
-You will be given pre-formatted pairs of items in the output section below.
-For each pair, fill in the [relationship] placeholder with one of the following terms: {', '.join(relationship_list)}.
-Do not modify the item names, numbers, or the structure of the output; only provide the relationship term.
-If multiple instances of an item exist (e.g., two chairs), they are already distinguished as 'item(1)', 'item(2)', etc., in the pair.
-Each pair is unique, and you should provide the relationship based on a logical spatial interpretation of the layout.
-
+1. You will be given pre-formatted pairs of items in the output section below.
+2. For each pair, fill in the [relationship] placeholder with one of the following terms: {', '.join(relationship_list)}.
+3. Do not modify the item names, numbers, or the structure of the output; only provide the relationship term.
+4. If multiple instances of an item exist (e.g., two chairs), they are already distinguished as 'item(1)', 'item(2)', etc., in the pair.
+5. Each pair is unique, and you should provide the relationship based on a logical spatial interpretation of the layout.
+6. The requirement of the relationship is:
+    - above: The center height of corners1 is higher than that of corners2, with no vertical overlap between them, or name1 contains "lamp" (since lamps are always above other objects).
+    - below: The center height of corners1 is lower than that of corners2, with no vertical overlap between them, or name2 contains "lamp".
+    - in front of: The theta value is in the range [π/4, 3π/4), indicating corners1 is in front of corners2.
+    - behind: The theta value is in the range [-3π/4, -π/4), indicating corners1 is behind corners2.
+    - left of: The theta value is in the range [3π/4, π) or [-π, -3π/4), indicating corners1 is to the left of corners2.
+    - right of: The theta value is in the range [-π/4, π/4), indicating corners1 is to the right of corners2.
+    - closely in front of: Meets the conditions for "in front of," and the horizontal distance between them is less than 1m.
+    - closely behind: Meets the conditions for "behind," and the horizontal distance between them is less than 1m.
+    - closely left of: Meets the conditions for "left of," and the horizontal distance between them is less than 1m.
+    - closely right of: Meets the conditions for "right of," and the horizontal distance between them is less than 1m.
+    
 ### Output format:
 The pairs are listed below. Replace [relationship] with the appropriate term from the provided list.
 

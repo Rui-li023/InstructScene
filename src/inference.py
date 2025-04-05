@@ -9,6 +9,7 @@ from diffusers.training_utils import EMAModel
 import trimesh
 from typing import Dict, Tuple, Optional
 
+from torch.utils.data import DataLoader
 from src.data import get_dataset_raw_and_encoded, filter_function
 from src.utils.util import load_config, load_checkpoints
 from src.utils.visualize import draw_scene_graph
@@ -109,35 +110,68 @@ class SceneGenerator:
             split=self.config["validation"].get("splits", ["test"])
         )
 
+        self.dataloader = DataLoader(
+            self.dataset,
+            batch_size=1,
+            num_workers=1,
+            pin_memory=False,
+            collate_fn=self.dataset.collate_fn,
+            shuffle=False
+        )
+        
     def get_custom_furniture_mesh(self, category: str, bbox_params: ndarray) -> Optional[trimesh.Trimesh]:
         """获取自定义家具的trimesh对象"""
         if category not in self.custom_furniture:
             return None
             
         obj_path, _ = self.custom_furniture[category]
-        tr_mesh = trimesh.load(obj_path, force="mesh")
-        # tr_mesh.visual.material.image = Image.open(texture_path)
+        tr_mesh = trimesh.load_mesh(obj_path, force="mesh")
 
-        # 应用变换
-        translation = bbox_params[-7:-4]
+        # 获取变换参数，调换-5,-6和-3,-4的顺序
+        translation = bbox_params[-7:-4].copy()   # [x,y,z]
+        sizes = bbox_params[-4:-1].copy()  # [x,y,z]
+        # translation[[1, 2]] = translation[[2, 1]]
+        # sizes[[1, 2]] = sizes[[2, 1]]
         theta = bbox_params[-1]
-        R = np.zeros((3, 3))
-        R[0, 0] = np.cos(theta)
-        R[0, 2] = -np.sin(theta)
-        R[2, 0] = np.sin(theta)
-        R[2, 2] = np.cos(theta)
-        R[1, 1] = 1.
 
-        # 应用尺寸和旋转变换
-        target_size = bbox_params[-4:-1]
+        # 围绕Y轴的旋转矩阵
+        R = np.array([
+            [np.cos(theta), 0, -np.sin(theta)],
+            [0, 1, 0],
+            [np.sin(theta), 0, np.cos(theta)],
+        ])
+
+        # 目标尺寸
+        target_size = sizes  # 使用调整后的尺寸
         current_size = tr_mesh.bounds[1] - tr_mesh.bounds[0]
-        scale = target_size / current_size
+
+        print(tr_mesh.bounds[0])
+        print(tr_mesh.bounds[1])
         
-        tr_mesh.vertices *= scale
-        tr_mesh.vertices -= (tr_mesh.bounds[0] + tr_mesh.bounds[1]) / 2.
-        tr_mesh.vertices = tr_mesh.vertices.dot(R) + translation
-        # tr_mesh.vertices += translation*2
+        # 计算缩放因子并使用最小值进行等比例缩放
+        scale_factors = target_size / current_size
+        min_scale = np.min(scale_factors)
+        scale = np.array([min_scale, min_scale, min_scale])
+
+        # 按顺序应用变换:
+        # 1. 缩放
+        tr_mesh.vertices *= scale_factors
+
+        # 2. 居中
+        center = (tr_mesh.bounds[0] + tr_mesh.bounds[1])
         
+        # print(tr_mesh.bounds[0])
+        # print(tr_mesh.bounds[1])
+        
+        # tr_mesh.vertices -= center
+
+        # 3. 应用旋转（现在是绕Y轴）
+        tr_mesh.vertices = tr_mesh.vertices.dot(R)
+
+        # 4. 应用平移
+        translation[1] *= 0.5
+        tr_mesh.vertices += translation
+
         return tr_mesh
 
     def generate(self, 
@@ -165,6 +199,7 @@ class SceneGenerator:
         """
         with torch.no_grad():
             # 1. 处理文本输入
+            print(text_description)
             text = self.tokenizer(text_description)
             text_features = self.clip.encode_text(text)
             
@@ -180,19 +215,41 @@ class SceneGenerator:
             
             # 2. 生成场景图
             objs = objs.to(self.device)
-            mask = mask.to(self.device)
+            obj_masks = mask.to(self.device)
             edges = edges.to(self.device)
             text_features = text_features.to(self.device)
-            floor_plan = floor_plan.to(self.device)
+            room_masks = floor_plan.to(self.device)
             
+            # for batch in self.dataloader:
+            #     for k, v in batch.items():
+            #         if not isinstance(v, list):
+            #             batch[k] = v.to(self.device)
+            #     objs = batch["objs"].to(self.device)
+            #     edges = batch["edges"].to(self.device)
+            #     obj_masks = batch["obj_masks"].to(self.device)
+            #     room_masks = batch["room_masks"].to(self.device)  # (B, 256, 256)
+            #     text_features = batch['clip_features'].to(self.device)
+
+            #     boxes_pred = self.model.generate_samples(
+            #         objs, edges, text_features, obj_masks, room_masks=room_masks, cfg_scale=cfg_scale, num_timesteps=1000
+            #     )
+            #     print(objs)
+            #     print(edges)
+            #     print(obj_masks)
+            #     print(boxes_pred)
+            #     print(batch["boxes"])
+            
+            print(objs)
+            print(edges)
+            print(obj_masks)
             boxes_pred = self.model.generate_samples(
-                objs, edges, text_features, mask, room_masks=floor_plan, cfg_scale=cfg_scale, num_timesteps=100
+                objs, edges, text_features, obj_masks, room_masks=room_masks, cfg_scale=cfg_scale, num_timesteps=1000
             )
+            
             print(boxes_pred.shape)
             print(boxes_pred)
         
         objs, edges = objs.cpu(), edges.cpu()
-        mask = mask.cpu()
         boxes_pred = boxes_pred.cpu()
 
         bbox_params = {
