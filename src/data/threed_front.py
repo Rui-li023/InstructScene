@@ -370,7 +370,7 @@ class CachedThreedFront(ThreedFront):
 
         # 加载CLIP特征字典
         self.clip_features = {}
-        clip_feature_dir = "dataset/InstructScene/InstructScene/3D-FUTURE-chatgpt-clip-feature"
+        clip_feature_dir = "dataset/InstructScene/InstructScene/3D-FUTURE-qwen-clip-feature"
         if os.path.exists(clip_feature_dir):
             for feature_file in os.listdir(clip_feature_dir):
                 if feature_file.endswith('.npy'):

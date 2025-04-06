@@ -339,7 +339,7 @@ class Sg2ScTransformerDiffusionWrapper(nn.Module):
         t = t * torch.ones(x.shape[0], dtype=t.dtype, device=t.device)
         
         x_emb = self.node_embed(x)
-        print(x_emb.shape, o.shape, box.shape)
+        # print(x_emb.shape, o.shape, box.shape)
         if o is not None:
             x_emb = self.node_proj_in(torch.cat([x_emb, o, box], dim=-1))
         else:

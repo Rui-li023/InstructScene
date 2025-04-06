@@ -91,7 +91,6 @@ class Flsg2ScDiffusion(nn.Module):
         target = noise
         noisy_boxes = self.scheduler.add_noise(boxes, noise, timesteps) * box_mask
         
-        # print(o.shape)
         pred = self.network(
             noisy_boxes, x, e, o,  # `x`, `e` and `o` as conditions
             timesteps, mask=mask, condition=room_masks
@@ -145,7 +144,6 @@ class Flsg2ScDiffusion(nn.Module):
     ):
         self.cfg_scale = cfg_scale
         B, N, device = x.shape[0], x.shape[1], x.device
-        print(device)
         boxes = torch.randn(B, N, 8).to(device)
 
         # Mask out the padding boxes
